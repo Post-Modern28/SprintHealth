@@ -11,7 +11,7 @@ sprints_path = r'D:\Python codes\SprintHealth\data_for_spb_hakaton_entities\spri
 
 def extract_sprint_names(data_path, changes_path, sprints_path):
     data = pd.read_csv(data_path, sep=';', skiprows=1)
-    history = pd.read_csv(changes_path, sep=';', skiprows=1)
+    history = pd.read_csv(changes_path, sep=';', skiprows=1).dropna(how="all")
     sprints = pd.read_csv(sprints_path, sep=';', skiprows=1)
     sprints['entity_ids'] = sprints['entity_ids'].apply(lambda x: list(map(int, x.strip('{}').split(','))))
 
