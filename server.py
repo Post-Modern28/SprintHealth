@@ -12,9 +12,8 @@ def get_sprint(name: str):
     with open('files/sprints.csv', mode='r', encoding='utf-8') as f:
         reader = csv.DictReader(f, delimiter=';')
         for sprint in map(Sprint.model_validate, reader):
-            print(sprint)
             if sprint.sprint_name == name:
-                return {"result": sprint.model_dump_json()}
+                return {"result": sprint.model_dump()}
     return "Not found!"
 
 
