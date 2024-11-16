@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 
-
 data_path = r'data_for_spb_hakaton_entities/data_for_spb_hakaton_entities1-Table 1.csv'
 history_path = r'data_for_spb_hakaton_entities\history-Table 1.csv'
 sprints_path = r'data_for_spb_hakaton_entities\sprints-Table 1.csv'
@@ -26,10 +25,8 @@ def extract_sprint_names(data_path, changes_path, sprints_path):
 extract_sprint_names(data_path, history_path, sprints_path)
 
 
-
 # Что нужно доработать:
 # добавить возможность селекта конкретных команд
-#
 def analyze_sprint(sprint_name: str) -> dict:
     df = pd.read_csv(r'data\aggregated.csv', sep=';')
     df = df[df['sprint_name'] == sprint_name]
@@ -70,14 +67,12 @@ def analyze_sprint(sprint_name: str) -> dict:
     response['cancelled_tasks'] = cancelled_count
     response['todo_tasks'] = todo_count
     response['in_progress_tasks'] = in_progress_count
-    response.update(analyze_backlog_changes(sprint_name))
+    response.update(analyze_backlog_changes(df))
     print(response)
     return response
 
 
-def analyze_backlog_changes(sprint_name: str)-> dict:
-    df = pd.read_csv(r'data\aggregated.csv', sep=';')
-    df = df[df['sprint_name'] == sprint_name]
+def analyze_backlog_changes(df: pd.DataFrame) -> dict:
     df = df[df['type'] != 'Дефект']
 
     convert_to_date = ['sprint_start_date', 'sprint_end_date', 'create_date', 'update_date']
