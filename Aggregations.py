@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 
 data_path = r'data_for_spb_hakaton_entities/data_for_spb_hakaton_entities1-Table 1.csv'
-history_path = r'data_for_spb_hakaton_entities\history-Table 1.csv'
+history_path = 'datahistory.csv'# r'data_for_spb_hakaton_entities\history-Table 1.csv'
 sprints_path = r'data_for_spb_hakaton_entities\sprints-Table 1.csv'
 
 
@@ -27,6 +27,7 @@ def parse_data(data_path, changes_path, sprints_path) -> dict:
     convert_to_date = ['sprint_start_date', 'sprint_end_date', 'create_date', 'update_date']
     merged_df[convert_to_date] = merged_df[convert_to_date].apply(pd.to_datetime)
     merged_df.to_csv(r'data\aggregated.csv', index=False, sep=";", encoding="utf-8-sig")
+    history.to_csv('datahistory.csv', index=False, sep=';', encoding='utf-8-sig')
     return {'teams': sprints_list}
 
 
@@ -58,16 +59,19 @@ def parse_sprint(df: pd.DataFrame) -> dict:
     teams = df['area'].unique().tolist()
     sprint_start_date = df['sprint_start_date'].iloc[0]
     sprint_end_date = df['sprint_end_date'].iloc[0]
-    response = {'teams': teams, 'sprint_start_date': sprint_start_date, 'sprint_end_date': sprint_end_date}
+    dates = pd.date_range(sprint_start_date, sprint_end_date)
+    response = {'teams': teams, 'sprint_start_date': sprint_start_date, 'sprint_end_date': sprint_end_date, 'dates': dates}
     return response
+
 
 def select_teams(df, teams: list) -> pd.DataFrame:
     df = df[df['area'].isin(teams)]
     return df[df['area'].isin(teams)]
 
 def limit_date(df, last_day):
-    df = df[df['created_date'] <= last_day] # убираем задачи, которые были добавлены после дня X
+    df = df[df['create_date'] <= last_day] # убираем задачи, которые были добавлены после дня X
     history = pd.read_csv(history_path)
+    history['history_date'] = history['history_date'].apply(pd.to_datetime)
     history = history[history['history_property_name'] == 'Статус']
     history = history[history['history_date'] <= last_day] # Аналогично
     history = history.loc[history.groupby('entity_id')['history_date'].idxmax()]

@@ -9,11 +9,9 @@
             const checkboxes = document.querySelectorAll('input[name="teams"]:checked');
             const selectedTeams = Array.from(checkboxes).map(checkbox => checkbox.value);
             const teamsString = selectedTeams.join(',');
-            const url = `/sprint/{{ name }}?selected=${teamsString}`;
-            
-            const startDate = document.getElementById('sprint_start_date').value;
             const endDate = document.getElementById('sprint_end_date').value;
-
+            const url = `/sprint/{{ name }}?selected=${teamsString}&sprint_end_date=${endDate}`;
+            
             window.location.href = url;
         }
     </script>
@@ -44,9 +42,6 @@
         <button type="button" onclick="submitForm()">Отправить</button>
 
         <li>Выберите диапазон дат:</li>
-        <label for="sprint_start_date">Дата начала:</label>
-        <input type="date" id="sprint_start_date" name="sprint_start_date" required>
-        <br>
         <label for="sprint_end_date">Дата окончания:</label>
         <input type="date" id="sprint_end_date" name="sprint_end_date" required>
         <br>

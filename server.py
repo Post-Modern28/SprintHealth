@@ -42,7 +42,6 @@ async def upload_files(request: Request, csv_files: List[UploadFile]):
 
 @app.get('/sprint/{name}')
 def get_sprint_by_name(request: Request, name: str, selected: str | None = None, 
-                       sprint_start_date: str | None = None,
                        sprint_end_date: str | None = None):
     sprint_df = Aggregations.get_sprint_by_name(name)
 
@@ -54,11 +53,10 @@ def get_sprint_by_name(request: Request, name: str, selected: str | None = None,
         selected = selected.split(',')
         sprint_df = Aggregations.select_teams(sprint_df, selected)
     
-    if sprint_start_date:
-        sprint_status["sprint_start_date"] = datetime.fromisoformat(sprint_start_date)
     if sprint_end_date:
-        sprint_status["sprint_end_date"] = datetime.fromisoformat(sprint_end_date)
-    
+        sprint_end_date = datetime.strptime(sprint_end_date, '%Y-%m-%d')
+        Aggregations.limit_date(sprint_df, sprint_end_date)
+        
     sprint_status = Aggregations.analyze_sprint(sprint_df)
     sprint_status.update(Aggregations.parse_sprint(sprint_df))
     sprint_name = sprint_df["sprint_name"].iloc[0]
