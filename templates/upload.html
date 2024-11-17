@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Загрузка файлов</title>
+</head>
+<body>
+    <h1>Загрузка файлов</h1>
+    <form action="/upload/" method="post" enctype="multipart/form-data">
+        <label for="csv_files">Выберите до 3 файлов:</label><br>
+        <input type="file" name="csv_files" multiple><br><br>
+        
+        <button type="submit">Готово</button>
+    </form>
+</body>
+</html>
