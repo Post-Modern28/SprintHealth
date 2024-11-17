@@ -9,8 +9,9 @@
     Для перехода к Спринту напиши /sprint/{name}
     <h1>Список спринтов</h1>
     <ul>
-        {% for sprint in sprints %}
-            <li> {{ sprint.model_dump() }}</li>
+
+        {% for sprint_name in sprints %}
+            <li><a href="/sprint/{{sprint_name}}"> {{ sprint_name }} {{value}}</li>
         {% endfor %}
     </ul>
 </body>
