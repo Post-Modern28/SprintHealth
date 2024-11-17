@@ -1,3 +1,5 @@
+from http.client import responses
+
 import numpy as np
 import pandas as pd
 
@@ -6,30 +8,60 @@ history_path = r'data_for_spb_hakaton_entities\history-Table 1.csv'
 sprints_path = r'data_for_spb_hakaton_entities\sprints-Table 1.csv'
 
 
-def extract_sprint_names(data_path, changes_path, sprints_path):
+def parse_data(data_path, changes_path, sprints_path):
     # логика: парсим файл с названиями спринтов и тасками в нём
     # делаем join на entity и сохраняем это в БД
     data = pd.read_csv(data_path, sep=';', skiprows=1)
     history = pd.read_csv(changes_path, sep=';', skiprows=1).dropna(how="all")
-    sprints = pd.read_csv(sprints_path, sep=';', skiprows=1)
-    sprints['entity_ids'] = sprints['entity_ids'].apply(lambda x: list(map(int, x.strip('{}').split(','))))
-
-    sprints_normalized = sprints.explode('entity_ids').reset_index(drop=True)
-    merged_df = pd.merge(sprints_normalized, data, left_on='entity_ids', right_on='entity_id', how='inner')
+    sprints = normalize_sprints(parse_sprints(sprints_path))
+    merged_df = pd.merge(sprints, data, left_on='entity_ids', right_on='entity_id', how='inner')
     # если будем загружать в sql, то сначала сконвертируем даты
     convert_to_date = ['sprint_start_date', 'sprint_end_date', 'create_date', 'update_date']
     merged_df[convert_to_date] = merged_df[convert_to_date].apply(pd.to_datetime)
     merged_df.to_csv(r'data\aggregated.csv', index=False, sep=";", encoding="utf-8-sig")
 
 
-extract_sprint_names(data_path, history_path, sprints_path)
 
+def parse_sprints(sprints_path: str) -> pd.DataFrame:
+    sprints = pd.read_csv(sprints_path, sep=';', skiprows=1)
+    sprints[['sprint_start_date', 'sprint_end_date']] = sprints[['sprint_start_date', 'sprint_end_date']].apply(pd.to_datetime)
+    sprints['entity_ids'] = sprints['entity_ids'].apply(lambda x: list(map(int, x.strip('{}').split(','))))
+    return sprints
+
+
+def normalize_sprints(sprints: pd.DataFrame) -> pd.DataFrame:
+    sprints_normalized = sprints.explode('entity_ids').reset_index(drop=True)
+    return sprints_normalized
+
+def get_sprints_list(df: pd.DataFrame) -> dict:
+    unique_sprints = df['sprint_name'].unique().tolist()
+    print(unique_sprints)
+    return {'sprints': unique_sprints}
+
+def get_sprint_by_name(sprint_name: str) -> pd.DataFrame:
+    df = pd.read_csv(r'data\aggregated.csv', sep=';')
+    df = df[df['sprint_name'] == sprint_name]
+    return df
+
+def parse_sprint(df: pd.DataFrame) -> dict:
+    response = {}
+    teams = df['area'].unique().tolist()
+    print(teams)
+    #TODO
+    return response
+
+def select_teams(df, teams: list) -> pd.DataFrame:
+    df = df[df['area'].isin(teams)]
+    return df[df['area'].isin(teams)]
+
+def limit_date(df, last_day):
+    #TODO
+    pass
 
 # Что нужно доработать:
 # добавить возможность селекта конкретных команд
-def analyze_sprint(sprint_name: str) -> dict:
-    df = pd.read_csv(r'data\aggregated.csv', sep=';')
-    df = df[df['sprint_name'] == sprint_name]
+def analyze_sprint(df: pd.DataFrame) -> dict:
+    # df = get_sprint_by_name(sprint_name)
 
     status_count = df['status'].value_counts().reset_index()
     status_count.columns = ['status', 'count']
@@ -85,4 +117,9 @@ def analyze_backlog_changes(df: pd.DataFrame) -> dict:
     return {'backlog_change': float(backlog_change_percentage), 'backlog_overload': backlog_overload}
 
 
-analyze_sprint('Спринт 2024.3.1.NPP Shared Sprint')
+if __name__ == '__main__':
+    # parse_data(data_path, history_path, sprints_path)
+
+    df = pd.read_csv(r'data\aggregated.csv', sep=';')
+    sprint = get_sprint_by_name('Спринт 2024.3.1.NPP Shared Sprint')
+    analyze_sprint(sprint)
