@@ -1,8 +1,9 @@
-from fastapi import FastAPI, UploadFile, status
+from fastapi import FastAPI, UploadFile, Query
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi import Request
 from typing import List
+from datetime import datetime
 from models import Sprint, History, Entity
 import Aggregations
 
@@ -26,7 +27,7 @@ async def upload_page(request: Request):
 @app.post("/sprints", response_class=HTMLResponse)
 async def upload_files(request: Request, csv_files: List[UploadFile]):
     if len(csv_files) != 3:
-        return {"error": "Вы можете загрузить 3 файла (sprints.csv, history.csv, data*.csv)"}
+        return "Нужно 3 файла!"
 
     file_names = []
     for csv_file in csv_files:
@@ -40,9 +41,29 @@ async def upload_files(request: Request, csv_files: List[UploadFile]):
                                        "sprints": result['teams']['sprints']})
 
 @app.get('/sprint/{name}')
-def get_sprint_by_name(name: str):
+def get_sprint_by_name(request: Request, name: str, selected: str | None = None, 
+                       sprint_start_date: str | None = None,
+                       sprint_end_date: str | None = None):
     sprint_df = Aggregations.get_sprint_by_name(name)
+
     sprint_status = Aggregations.analyze_sprint(sprint_df)
     sprint_status.update(Aggregations.parse_sprint(sprint_df))
-    sprint_name = sprint_df["sprint_name"].iloc[0] 
-    return {sprint_name: sprint_status}
+    all_teams = sprint_status['teams']
+
+    if selected:
+        selected = selected.split(',')
+        sprint_df = Aggregations.select_teams(sprint_df, selected)
+    
+    if sprint_start_date:
+        sprint_status["sprint_start_date"] = datetime.fromisoformat(sprint_start_date)
+    if sprint_end_date:
+        sprint_status["sprint_end_date"] = datetime.fromisoformat(sprint_end_date)
+    
+    sprint_status = Aggregations.analyze_sprint(sprint_df)
+    sprint_status.update(Aggregations.parse_sprint(sprint_df))
+    sprint_name = sprint_df["sprint_name"].iloc[0]
+    sprint_status['teams'] = all_teams
+    return templates.TemplateResponse("sprint.html", {"request": request, 
+                                                      "name": sprint_name, 
+                                                      "info": sprint_status, 
+                                                      'selected': selected}) 

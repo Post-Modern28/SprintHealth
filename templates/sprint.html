@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sprint {{ name }}</title>
+        <script>
+        function submitForm() {
+            const checkboxes = document.querySelectorAll('input[name="teams"]:checked');
+            const selectedTeams = Array.from(checkboxes).map(checkbox => checkbox.value);
+            const teamsString = selectedTeams.join(',');
+            const url = `/sprint/{{ name }}?selected=${teamsString}`;
+            
+            const startDate = document.getElementById('sprint_start_date').value;
+            const endDate = document.getElementById('sprint_end_date').value;
+
+            window.location.href = url;
+        }
+    </script>
+</head>
+<body>
+    <h1>Вы перешли на {{ name }}</h1>
+    <ul>
+        <li>Общее количество задач: {{ info.total_tasks }}</li>
+        <li>Количество отмененных задач: {{ info.cancelled_tasks }}</li>
+        <li>Количество задач в работе: {{ info.in_progress_tasks }}</li>
+        <li>Количество задач в ожидании: {{ info.todo_tasks }}</li>
+        <li>Изменение бэклога: {{ info.backlog_change }}</li>
+        <li>Дата начала спринта: {{ info.sprint_start_date }}</li>
+        <li>Дата окончания спринта: {{ info.sprint_end_date }}</li>
+        <li>Команды:</li>
+        <ul>
+            {% for team in info.teams %}
+                <li>
+                    <input type="checkbox" id="{{ team }}" name="teams" value="{{ team }}"
+                        {% if not selected or team in selected%}
+                            checked
+                        {% endif %}
+                    >
+                    <label for="{{ team }}">{{ team }}</label>
+                </li>
+            {% endfor %}
+        </ul>
+        <button type="button" onclick="submitForm()">Отправить</button>
+
+        <li>Выберите диапазон дат:</li>
+        <label for="sprint_start_date">Дата начала:</label>
+        <input type="date" id="sprint_start_date" name="sprint_start_date" required>
+        <br>
+        <label for="sprint_end_date">Дата окончания:</label>
+        <input type="date" id="sprint_end_date" name="sprint_end_date" required>
+        <br>
+        <button type="button" onclick="submitForm()">Отправить</button>
+</body>
+</html>
