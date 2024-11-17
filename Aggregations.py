@@ -70,7 +70,7 @@ def select_teams(df, teams: list) -> pd.DataFrame:
 
 def limit_date(df, last_day):
     df = df[df['create_date'] <= last_day] # убираем задачи, которые были добавлены после дня X
-    history = pd.read_csv(history_path)
+    history = pd.read_csv(history_path, sep=';')
     history['history_date'] = history['history_date'].apply(pd.to_datetime)
     history = history[history['history_property_name'] == 'Статус']
     history = history[history['history_date'] <= last_day] # Аналогично

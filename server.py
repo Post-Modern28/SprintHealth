@@ -55,7 +55,7 @@ def get_sprint_by_name(request: Request, name: str, selected: str | None = None,
     
     if sprint_end_date:
         sprint_end_date = datetime.strptime(sprint_end_date, '%Y-%m-%d')
-        Aggregations.limit_date(sprint_df, sprint_end_date)
+        sprint_df = Aggregations.limit_date(sprint_df, sprint_end_date)
         
     sprint_status = Aggregations.analyze_sprint(sprint_df)
     sprint_status.update(Aggregations.parse_sprint(sprint_df))
