@@ -51,6 +51,8 @@ def get_sprints_list(df: pd.DataFrame) -> dict:
 def get_sprint_by_name(sprint_name: str) -> pd.DataFrame:
     df = pd.read_csv(r'data\aggregated.csv', sep=';')
     df = df[df['sprint_name'] == sprint_name]
+    convert_to_date = ['sprint_start_date', 'sprint_end_date', 'create_date', 'update_date']
+    df[convert_to_date] = df[convert_to_date].apply(pd.to_datetime)
     return df
 
 def parse_sprint(df: pd.DataFrame) -> dict:
@@ -66,11 +68,18 @@ def select_teams(df, teams: list) -> pd.DataFrame:
     return df[df['area'].isin(teams)]
 
 def limit_date(df, last_day):
-    #TODO
-    pass
+    history = pd.read_csv(history_path)
+    history = history[history['history_property_name'] == 'Статус']
+    history = history[history['history_date'] <= last_day]
+    history = history.loc[history.groupby('entity_id')['history_date'].idxmax()]
+    history['new_status'] = history['history_change'].str.split(' -> ').str[1]
+    mapping = {'completed': 'Закрыто', 'created': 'Создано'}
+    history['new_status'] = history['new_status'].map(mapping).fillna('В работе')
+    merged_df = pd.merge(df, history, on='entity_id', how='left')
+    merged_df.loc[merged_df['new_status'].notnull(), 'status'] = merged_df['new_status']
+    return merged_df
 
-# Что нужно доработать:
-# добавить возможность селекта конкретных команд
+
 def analyze_sprint(df: pd.DataFrame) -> dict:
 
     status_count = df['status'].value_counts().reset_index()
@@ -129,6 +138,6 @@ def analyze_backlog_changes(df: pd.DataFrame) -> dict:
 if __name__ == '__main__':
     # parse_data(data_path, history_path, sprints_path)
 
-    df = pd.read_csv(r'data\aggregated.csv', sep=';')
+
     sprint = get_sprint_by_name('Спринт 2024.3.1.NPP Shared Sprint')
     analyze_sprint(sprint)
