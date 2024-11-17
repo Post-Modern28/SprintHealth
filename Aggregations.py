@@ -1,5 +1,3 @@
-from http.client import responses
-
 import numpy as np
 import pandas as pd
 
@@ -45,14 +43,14 @@ def normalize_sprints(sprints: pd.DataFrame) -> pd.DataFrame:
 
 def get_sprints_list(df: pd.DataFrame) -> dict:
     unique_sprints = df['sprint_name'].unique().tolist()
-    print(unique_sprints)
     return {'sprints': unique_sprints}
 
 def get_sprint_by_name(sprint_name: str) -> pd.DataFrame:
     df = pd.read_csv(r'data\aggregated.csv', sep=';')
-    df = df[df['sprint_name'] == sprint_name]
     convert_to_date = ['sprint_start_date', 'sprint_end_date', 'create_date', 'update_date']
     df[convert_to_date] = df[convert_to_date].apply(pd.to_datetime)
+    df = df[df['sprint_name'] == sprint_name]
+
     return df
 
 def parse_sprint(df: pd.DataFrame) -> dict:
@@ -68,15 +66,17 @@ def select_teams(df, teams: list) -> pd.DataFrame:
     return df[df['area'].isin(teams)]
 
 def limit_date(df, last_day):
+    df = df[df['created_date'] <= last_day] # убираем задачи, которые были добавлены после дня X
     history = pd.read_csv(history_path)
     history = history[history['history_property_name'] == 'Статус']
-    history = history[history['history_date'] <= last_day]
+    history = history[history['history_date'] <= last_day] # Аналогично
     history = history.loc[history.groupby('entity_id')['history_date'].idxmax()]
     history['new_status'] = history['history_change'].str.split(' -> ').str[1]
     mapping = {'completed': 'Закрыто', 'created': 'Создано'}
     history['new_status'] = history['new_status'].map(mapping).fillna('В работе')
     merged_df = pd.merge(df, history, on='entity_id', how='left')
     merged_df.loc[merged_df['new_status'].notnull(), 'status'] = merged_df['new_status']
+    merged_df.loc[merged_df['new_status'].isnull(), 'status'] = 'Создано'
     return merged_df
 
 
@@ -125,8 +125,6 @@ def analyze_sprint(df: pd.DataFrame) -> dict:
 def analyze_backlog_changes(df: pd.DataFrame) -> dict:
     df = df[df['type'] != 'Дефект']
 
-    convert_to_date = ['sprint_start_date', 'sprint_end_date', 'create_date', 'update_date']
-    df[convert_to_date] = df[convert_to_date].apply(pd.to_datetime)
     total_hours = df['estimation'].sum()
     late_tasks = df[df['create_date'] - df['sprint_start_date'] >= pd.Timedelta(days=2)]
     late_tasks_sum = late_tasks['estimation'].sum()
@@ -140,4 +138,5 @@ if __name__ == '__main__':
 
 
     sprint = get_sprint_by_name('Спринт 2024.3.1.NPP Shared Sprint')
+    print(parse_sprint(sprint))
     analyze_sprint(sprint)
