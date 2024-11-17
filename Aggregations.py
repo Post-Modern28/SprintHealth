@@ -8,18 +8,28 @@ history_path = r'data_for_spb_hakaton_entities\history-Table 1.csv'
 sprints_path = r'data_for_spb_hakaton_entities\sprints-Table 1.csv'
 
 
-def parse_data(data_path, changes_path, sprints_path):
+def parse_data(data_path, changes_path, sprints_path) -> dict:
+    """
+    Парсит переданные 3 csv файла
+    :param data_path:
+    :param changes_path:
+    :param sprints_path:
+    :return: Возвращает список спринтов
+    """
+
     # логика: парсим файл с названиями спринтов и тасками в нём
     # делаем join на entity и сохраняем это в БД
     data = pd.read_csv(data_path, sep=';', skiprows=1)
     history = pd.read_csv(changes_path, sep=';', skiprows=1).dropna(how="all")
-    sprints = normalize_sprints(parse_sprints(sprints_path))
+    sprints = parse_sprints(sprints_path)
+    sprints_list = get_sprints_list(sprints)
+    sprints = normalize_sprints(sprints)
     merged_df = pd.merge(sprints, data, left_on='entity_ids', right_on='entity_id', how='inner')
     # если будем загружать в sql, то сначала сконвертируем даты
     convert_to_date = ['sprint_start_date', 'sprint_end_date', 'create_date', 'update_date']
     merged_df[convert_to_date] = merged_df[convert_to_date].apply(pd.to_datetime)
     merged_df.to_csv(r'data\aggregated.csv', index=False, sep=";", encoding="utf-8-sig")
-
+    return {'teams': sprints_list}
 
 
 def parse_sprints(sprints_path: str) -> pd.DataFrame:
@@ -46,8 +56,9 @@ def get_sprint_by_name(sprint_name: str) -> pd.DataFrame:
 def parse_sprint(df: pd.DataFrame) -> dict:
     response = {}
     teams = df['area'].unique().tolist()
-    print(teams)
-    #TODO
+    sprint_start_date = df['sprint_start_date'].iloc[0]
+    sprint_end_date = df['sprint_end_date'].iloc[0]
+    response = {'teams': teams, 'sprint_start_date': sprint_start_date, 'sprint_end_date': sprint_end_date}
     return response
 
 def select_teams(df, teams: list) -> pd.DataFrame:
@@ -61,7 +72,6 @@ def limit_date(df, last_day):
 # Что нужно доработать:
 # добавить возможность селекта конкретных команд
 def analyze_sprint(df: pd.DataFrame) -> dict:
-    # df = get_sprint_by_name(sprint_name)
 
     status_count = df['status'].value_counts().reset_index()
     status_count.columns = ['status', 'count']
@@ -78,8 +88,8 @@ def analyze_sprint(df: pd.DataFrame) -> dict:
     cancelled_sum = df[cancelled]['estimation'].sum()
 
     finished = (df['status'].isin(['Выполнено', 'Закрыто'])) & ~cancelled
-    finished_count = df[finished].shape[0]
-    finished_sum = df[finished]['estimation'].sum()
+    # finished_count = df[finished].shape[0]
+    # finished_sum = df[finished]['estimation'].sum()
 
     todo = df['status'] == 'Создано'
     todo_count = df[todo].shape[0]
@@ -87,7 +97,7 @@ def analyze_sprint(df: pd.DataFrame) -> dict:
 
     in_progress = ~(cancelled | finished | todo)
     in_progress_count = df[in_progress].shape[0]
-    in_progress_sum = df[in_progress]['estimation'].sum()
+    # in_progress_sum = df[in_progress]['estimation'].sum()
 
     response = {'todo_overload': 0, 'cancelled_overload': 0, 'backlog_overload': 0}
     if todo_sum / total_hours > 0.2:
@@ -100,7 +110,6 @@ def analyze_sprint(df: pd.DataFrame) -> dict:
     response['todo_tasks'] = todo_count
     response['in_progress_tasks'] = in_progress_count
     response.update(analyze_backlog_changes(df))
-    print(response)
     return response
 
 
@@ -113,8 +122,8 @@ def analyze_backlog_changes(df: pd.DataFrame) -> dict:
     late_tasks = df[df['create_date'] - df['sprint_start_date'] >= pd.Timedelta(days=2)]
     late_tasks_sum = late_tasks['estimation'].sum()
     backlog_change_percentage = np.round(late_tasks_sum * 100 / (total_hours - late_tasks_sum), 1)
-    backlog_overload = int(backlog_change_percentage > 20)
-    return {'backlog_change': float(backlog_change_percentage), 'backlog_overload': backlog_overload}
+
+    return {'backlog_change': float(backlog_change_percentage)}
 
 
 if __name__ == '__main__':
