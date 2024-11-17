@@ -19,7 +19,6 @@ def get_sprint(name: str):
 
 @app.post('/save_data')
 def save_data(sprints: List[Sprint], history: List[History], entities: List[Entity]):
-    # TODO придумать как поменять формат datetime в нормальную строку.
     with open('files/sprints.csv', mode='w', encoding='utf-8') as f:
         writer = csv.DictWriter(f)
         for sprint in sprints:
